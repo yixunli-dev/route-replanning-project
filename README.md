@@ -46,6 +46,16 @@ route-replanning-project/
 - Congestion increases travel time significantly
 - Alternative route is selected when available
 
+## Visualization
+
+### Original Route
+
+![Original Path](assets/original_path.png)
+
+### Rerouted Path after Congestion
+
+![Rerouted Path](assets/rerouted_path.png)
+
 ## Future Work
 
 - Implement Yen’s K-shortest paths
