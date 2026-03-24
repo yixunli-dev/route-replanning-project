@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+
+# VS Code
+.vscode/
+
+# Mac
+.DS_Store
+
+# Cache
+cache/
+
+# Outputs (images, results)
+outputs/
+
+# Jupyter
+.ipynb_checkpoints/
