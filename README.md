@@ -19,7 +19,7 @@ This project implements a dynamic route replanning system using real-world road 
 - Matplotlib
 
 ## Project Structure
-
+```
 route-replanning-project/
 ├── src/
 │ ├── load_graph_test.py
@@ -30,7 +30,7 @@ route-replanning-project/
 │ └── 01_osmnx_setup.ipynb
 ├── outputs/ (ignored)
 └── README.md
-
+```
 ## How It Works
 
 1. Download road network using OSMnx
