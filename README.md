@@ -22,10 +22,10 @@ This project implements a dynamic route replanning system using real-world road 
 ```
 route-replanning-project/
 ├── src/
-│ ├── load_graph_test.py
-│ ├── dijkstra_test.py
-│ ├── reroute_test.py
-│ └── test_setup.py
+│ ├── graph_utils.py
+│ ├── dijkstra.py
+│ ├── congestion.py
+│ └── reroute_demo.py
 ├── notebooks/
 │ └── 01_osmnx_setup.ipynb
 ├── outputs/ (ignored)
@@ -66,7 +66,7 @@ route-replanning-project/
 ## How to Run
 
 ```bash
-python3 src/reroute_test.py
+python3 src/reroute_demo.py
 Author
 
 Yixun Li
