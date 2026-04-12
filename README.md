@@ -106,7 +106,29 @@ route-replanning-project/
 
 ```bash
 python3 src/reroute_demo.py
-
-Author
-Yixun Li
 ```
+
+---
+
+## Testing
+
+Run Yen’s algorithm test:
+
+```bash
+python3 tests/yen_test.py
+```
+
+---
+
+## Future Work
+
+- Use real-time traffic data (API integration)
+- Improve travel time estimation using speed limits
+- Add user-defined source/target selection
+- Expand to larger city-scale networks
+
+---
+
+## Author
+
+Yixun Li
