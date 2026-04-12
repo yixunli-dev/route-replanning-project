@@ -2,14 +2,31 @@
 
 This project implements a dynamic route replanning system using real-world road network data from OpenStreetMap. It demonstrates how shortest path algorithms adapt to traffic congestion by updating edge weights and recomputing routes.
 
+---
+
 ## Features
 
-- Build road network graph using OSMnx
+- Build real-world road network using OSMnx
 - Convert road network into a weighted directed graph
 - Implement Dijkstra’s algorithm from scratch
-- Simulate congestion by modifying edge travel time
+- Simulate traffic congestion by modifying edge travel time
 - Perform dynamic rerouting based on updated weights
-- Visualize routes before and after congestion
+- Implement Yen’s algorithm to compute K shortest alternative paths
+- Visualize original and alternative routes on real maps
+
+---
+
+## Algorithms Used
+
+- **Dijkstra’s Algorithm**
+  - Computes the shortest path based on travel time
+- **Yen’s K-Shortest Paths Algorithm**
+  - Finds multiple loopless alternative routes
+  - Avoids duplicate paths and ensures diversity
+- **Graph Traversal (DFS)**
+  - Used to ensure reachable source-target selection
+
+---
 
 ## Tech Stack
 
@@ -18,33 +35,52 @@ This project implements a dynamic route replanning system using real-world road 
 - NetworkX
 - Matplotlib
 
+---
+
 ## Project Structure
+
 ```
 route-replanning-project/
 ├── src/
 │ ├── graph_utils.py
 │ ├── dijkstra.py
 │ ├── congestion.py
-│ └── reroute_demo.py
+│ ├── yen_ksp.py
+│ ├── reroute_demo.py
+│ └── final_demo.py
+│
+├── tests/
+│ └── yen_test.py
+│
 ├── notebooks/
 │ └── 01_osmnx_setup.ipynb
+│
 ├── outputs/ (ignored)
+│
 └── README.md
 ```
+
+---
+
 ## How It Works
 
-1. Download road network using OSMnx
-2. Assign edge weight based on travel time
+1. Load real-world road network using OSMnx
+2. Assign edge weights based on travel time
 3. Compute shortest path using Dijkstra
-4. Introduce congestion by increasing edge weights
-5. Recompute shortest path
-6. Compare routes before and after congestion
+4. Simulate congestion by increasing travel time on selected edges
+5. Recompute routes using updated graph
+6. Generate K alternative paths using Yen’s algorithm
+7. Compare and visualize all routes
+
+---
 
 ## Example Result
 
 - Original path vs rerouted path
 - Congestion increases travel time significantly
 - Alternative route is selected when available
+
+---
 
 ## Visualization
 
@@ -54,20 +90,23 @@ route-replanning-project/
 
 ### Rerouted Path after Congestion
 
-![Rerouted Path](assets/rerouted_path.png)
+![Original Route](assets/final_original_path.png)
 
-## Future Work
+### Best Alternative Route (After Congestion)
 
-- Implement Yen’s K-shortest paths
-- Add more realistic congestion models
-- Support real-time traffic updates
-- Extend to larger geographic regions
+![Best Alternative](assets/final_best_alternative.png)
+
+### K Shortest Paths Comparison
+
+![K Paths](assets/final_k_paths_comparison.png)
+
+---
 
 ## How to Run
 
 ```bash
 python3 src/reroute_demo.py
-Author
 
+Author
 Yixun Li
 ```
