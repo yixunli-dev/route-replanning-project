@@ -177,21 +177,24 @@ Selected edges have their `travel_time` weight multiplied by a configurable `con
 
 ## Visualization
 
-### Original Route
-
-![Original Path](assets/original_path.png)
-
-### Rerouted Path after Congestion
-
-![Rerouted Route](assets/final_original_path.png)
-
-### Best Alternative Route
-
-![Best Alternative](assets/final_best_alternative.png)
-
-### K Shortest Paths Comparison
-
-![K Paths](assets/final_k_paths_comparison.png)
+<table>
+  <tr>
+    <td><img src="assets/original_path.png" width="400"/></td>
+    <td><img src="assets/final_original_path.png" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center">Original Route</td>
+    <td align="center">Rerouted Path after Congestion</td>
+  </tr>
+  <tr>
+    <td><img src="assets/final_best_alternative.png" width="400"/></td>
+    <td><img src="assets/final_k_paths_comparison.png" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center">Best Alternative Route</td>
+    <td align="center">K Shortest Paths Comparison</td>
+  </tr>
+</table>
 
 ---
 
