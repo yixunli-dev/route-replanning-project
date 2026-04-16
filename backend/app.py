@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.schemas import ReplanRequest, ReplanResponse
-from backend.service import run_replanning_pipeline_by_addresses
+from backend.service import run_replanning_pipeline_by_addresses, preload_graph
 
 
 app = FastAPI(
@@ -20,11 +20,15 @@ app.add_middleware(
 )
 
 
+@app.on_event("startup")
+async def startup_event():
+    """Pre-load the road network graph on server start."""
+    preload_graph()
+
+
 @app.get("/")
 def health_check():
-    return {
-        "message": "Route Replanning API is running"
-    }
+    return {"message": "Route Replanning API is running"}
 
 
 @app.post("/api/routes/replan", response_model=ReplanResponse)

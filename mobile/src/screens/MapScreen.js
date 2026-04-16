@@ -4,7 +4,7 @@
 // all congestion constants/math live in congestionUtils.
 // ─────────────────────────────────────────────────────────────
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 
@@ -70,14 +70,29 @@ export default function MapScreen({ route }) {
   const showCar =
     phase === "driving" || phase === "alt_driving" || phase === "alt_prompt";
 
+  // Convert carPosition (lat/lon) → screen pixel coords via MapView API.
+  // This lets us render the car as a plain View overlay, completely
+  // bypassing react-native-maps Marker / tracksViewChanges issues.
+  const [carScreen, setCarScreen] = useState(null);
+  useEffect(() => {
+    if (!mapRef.current || !carPosition || !showCar) {
+      setCarScreen(null);
+      return;
+    }
+    mapRef.current
+      .pointForCoordinate(carPosition)
+      .then((pt) => setCarScreen(pt))
+      .catch(() => setCarScreen(null));
+  }, [carPosition, showCar]);
+
   // ── Render ─────────────────────────────────────────────────
   return (
     <View style={styles.container}>
       <MapView ref={mapRef} style={styles.map} initialRegion={initialRegion}>
         {/* 1. Congestion-colored segments (only those ahead of car) */}
-        {visibleCongestionSegments.map((seg, i) => (
+        {visibleCongestionSegments.map((seg) => (
           <Polyline
-            key={`cong-${i}`}
+            key={`cong-${seg.segIdx}`}
             coordinates={seg.coordinates}
             strokeColor={seg.color}
             strokeWidth={7}
@@ -101,9 +116,9 @@ export default function MapScreen({ route }) {
           ))}
 
         {/* 3. Alt route – congestion colors ahead of the car */}
-        {altVisibleCongestionSegments.map((seg, i) => (
+        {altVisibleCongestionSegments.map((seg) => (
           <Polyline
-            key={`alt-cong-${i}`}
+            key={`alt-cong-${seg.segIdx}`}
             coordinates={seg.coordinates}
             strokeColor={seg.color}
             strokeWidth={7}
@@ -134,35 +149,40 @@ export default function MapScreen({ route }) {
           />
         )}
 
-        {/* 6. Car marker */}
-        {showCar && carPosition && (
-          <Marker
-            coordinate={carPosition}
-            anchor={{ x: 0.5, y: 0.5 }}
-            zIndex={999}
-          >
-            <View style={styles.carMarker}>
-              <Text style={styles.carEmoji}>🚗</Text>
-            </View>
-          </Marker>
-        )}
-
-        {/* 7. Start / end markers */}
+        {/* 6. Start / end markers */}
         {originalRoute.length > 0 && (
           <>
             <Marker
               coordinate={originalRoute[0]}
               title="Start"
               pinColor="green"
+              zIndex={1}
             />
             <Marker
               coordinate={originalRoute[originalRoute.length - 1]}
               title="Destination"
               pinColor="red"
+              zIndex={1}
             />
           </>
         )}
       </MapView>
+
+      {/* Car dot — plain View outside MapView, positioned via pointForCoordinate.
+          Completely avoids Marker / tracksViewChanges snapshot issues. */}
+      {showCar && carScreen && (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.carDot,
+            {
+              position: "absolute",
+              left: carScreen.x - 11,
+              top: carScreen.y - 11,
+            },
+          ]}
+        />
+      )}
 
       {/* ══ IDLE / DONE: legend + stats + Start ══════════════ */}
       {(phase === "idle" || phase === "done") && (
@@ -258,9 +278,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
 
-  carMarker: { alignItems: "center", justifyContent: "center" },
-  carEmoji: { fontSize: 22 },
-
   // ── idle/done panel ──
   bottomPanel: {
     position: "absolute",
@@ -287,6 +304,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   infoText: { color: "#FFFFFF", fontSize: 16, fontWeight: "600" },
+
+  carDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#22C55E",
+    borderWidth: 3,
+    borderColor: "#14532D",
+  },
+
   startButton: {
     backgroundColor: "#22C55E",
     paddingVertical: 18,

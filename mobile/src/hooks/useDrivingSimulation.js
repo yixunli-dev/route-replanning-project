@@ -100,12 +100,7 @@ export function useDrivingSimulation(originalRoute) {
   // - speed begins at 170ms instead of the clear route's 90ms
   const altBoundaries = useMemo(
     () =>
-      selectedAlt
-        ? buildAltSegmentBoundaries(
-            selectedAlt.coords.length,
-            ORANGE_SEGMENT_IDX,
-          )
-        : [],
+      selectedAlt ? buildAltSegmentBoundaries(selectedAlt.coords.length) : [],
     [selectedAlt],
   );
 
@@ -164,15 +159,16 @@ export function useDrivingSimulation(originalRoute) {
     if (phase === "alt_driving" || phase === "done") return [];
 
     return segmentBoundaries
-      .filter((b) => b.endIdx > currentIndex)
-      .map((b) => ({
-        coordinates: originalRoute.slice(
+      .map((b, segIdx) => {
+        if (b.endIdx <= currentIndex) return null;
+        const coordinates = originalRoute.slice(
           Math.max(b.startIdx, currentIndex),
           b.endIdx + 1,
-        ),
-        color: b.color,
-      }))
-      .filter((s) => s.coordinates.length >= 2);
+        );
+        if (coordinates.length < 2) return null;
+        return { segIdx, coordinates, color: b.color };
+      })
+      .filter(Boolean);
   }, [phase, currentIndex, segmentBoundaries, originalRoute]);
 
   /** Gray overlay on the original route (traveled portion). */
@@ -198,15 +194,16 @@ export function useDrivingSimulation(originalRoute) {
     if (phase !== "alt_driving" || !selectedAlt) return [];
 
     return altBoundaries
-      .filter((b) => b.endIdx > altIndex)
-      .map((b) => ({
-        coordinates: selectedAlt.coords.slice(
+      .map((b, segIdx) => {
+        if (b.endIdx <= altIndex) return null;
+        const coordinates = selectedAlt.coords.slice(
           Math.max(b.startIdx, altIndex),
           b.endIdx + 1,
-        ),
-        color: b.color,
-      }))
-      .filter((s) => s.coordinates.length >= 2);
+        );
+        if (coordinates.length < 2) return null;
+        return { segIdx, coordinates, color: b.color };
+      })
+      .filter(Boolean);
   }, [phase, altIndex, selectedAlt, altBoundaries]);
 
   /** Current car position on the map. */
