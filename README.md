@@ -6,11 +6,11 @@ A full-stack dynamic route replanning system built on real-world road network da
 
 ## Overview
 
-| Layer     | Technology                       | Role                                     |
-| --------- | -------------------------------- | ---------------------------------------- |
-| Algorithm | Python · OSMnx · NetworkX        | Graph construction, Dijkstra, Yen's K-SP |
-| Backend   | FastAPI                          | REST API, congestion pipeline            |
-| Mobile    | React Native · react-native-maps | Map UI, driving simulation               |
+| Layer     | Technology                       | Role                                         |
+| --------- | -------------------------------- | -------------------------------------------- |
+| Algorithm | Python · OSMnx · NetworkX        | Graph construction, Dijkstra, Yen's K-SP     |
+| Backend   | FastAPI                          | REST API, congestion pipeline, graph caching |
+| Mobile    | React Native · react-native-maps | Map UI, driving simulation                   |
 
 ---
 
@@ -20,12 +20,14 @@ A full-stack dynamic route replanning system built on real-world road network da
 - Shortest path via Dijkstra's algorithm (custom implementation)
 - K alternative paths via Yen's K-Shortest Paths algorithm
 - Congestion simulation by scaling edge travel-time weights
-- FastAPI backend exposing a single replanning endpoint
+- Three-level graph caching (memory → file → OSMnx) for fast repeated demos
+- FastAPI backend with startup preloading — route ready before first request
 - React Native mobile app with:
   - 4-color congestion visualization (clear / light / moderate / heavy)
   - Animated driving simulation with speed proportional to congestion level
   - Real-time alternative route prompt when congestion is detected
   - Gray trail overlay on traveled path
+  - Separate congestion color scheme for alternative routes
 
 ---
 
@@ -34,9 +36,9 @@ A full-stack dynamic route replanning system built on real-world road network da
 ```
 route-replanning-project/
 ├── backend/
-│   ├── app.py          # FastAPI app and CORS setup
+│   ├── app.py          # FastAPI app, CORS, startup graph preload
 │   ├── schemas.py      # Pydantic request / response models
-│   └── service.py      # Route pipeline: graph build → shortest path → response
+│   └── service.py      # Route pipeline + three-level graph cache
 │
 ├── mobile/
 │   └── src/
@@ -100,6 +102,8 @@ uvicorn backend.app:app --reload --host 0.0.0.0 --port 8000
 The API will be available at `http://localhost:8000`.  
 Swagger docs: `http://localhost:8000/docs`
 
+> **Graph caching:** On first run, the server downloads the road network from OpenStreetMap (~30s) and saves it to `backend/graph_cache.pkl`. All subsequent runs load from the file cache (~2s) or memory (instant). The cache file is excluded from version control.
+
 ---
 
 ### Mobile
@@ -114,9 +118,9 @@ npm install
 npx expo start
 ```
 
-Then scan the QR code with Expo Go, or press `i` for iOS simulator / `a` for Android emulator.
+Scan the QR code with Expo Go, or press `i` for iOS simulator / `a` for Android emulator.
 
-> **Note:** Update `mobile/src/config/api.js` with your machine's local IP address before running on a physical device.
+> **Note:** Update `mobile/src/config/api.js` with your machine's local IP address. Both your computer and phone must be on the same Wi-Fi network.
 
 ---
 
