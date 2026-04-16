@@ -18,4 +18,4 @@ cache/
 outputs/
 
 # Jupyter
-.ipynb_checkpoints/
+.ipynb_checkpoints/node_modules/
