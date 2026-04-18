@@ -1,6 +1,6 @@
 # Route Replanning Project
 
-A full-stack dynamic route replanning system built on real-world road network data. The backend computes shortest paths and simulates traffic congestion using graph algorithms; the mobile app visualizes routes and animates live rerouting decisions.
+A full-stack dynamic route replanning system built on real-world road network data. The backend computes shortest paths and simulates traffic congestion using graph algorithms; the mobile app visualizes routes, animates a driving simulation, and presents rerouting options through a driver-friendly interface.
 
 ---
 
@@ -10,7 +10,7 @@ A full-stack dynamic route replanning system built on real-world road network da
 | --------- | -------------------------------- | -------------------------------------------- |
 | Algorithm | Python · OSMnx · NetworkX        | Graph construction, Dijkstra, Yen's K-SP     |
 | Backend   | FastAPI                          | REST API, congestion pipeline, graph caching |
-| Mobile    | React Native · react-native-maps | Map UI, driving simulation                   |
+| Mobile    | React Native · react-native-maps | Map UI, driving simulation, route selection  |
 
 ---
 
@@ -25,9 +25,12 @@ A full-stack dynamic route replanning system built on real-world road network da
 - React Native mobile app with:
   - 4-color congestion visualization (clear / light / moderate / heavy)
   - Animated driving simulation with speed proportional to congestion level
-  - Real-time alternative route prompt when congestion is detected
-  - Gray trail overlay on traveled path
-  - Separate congestion color scheme for alternative routes
+  - **Sudden jam reveal**: ahead segments turn dark red mid-drive to simulate unexpected congestion
+  - **Two-step route selection**: tap to preview, then confirm — prevents accidental reroutes
+  - **Driver-friendly countdown**: 10s auto-continue on current route if no action taken; pauses when passenger is actively deciding
+  - Arrival summary showing time saved vs. congested route
+  - Live progress bar and gray trail overlay on traveled path
+  - Separate lighter color scheme for alternative routes
 
 ---
 
@@ -43,18 +46,18 @@ route-replanning-project/
 ├── mobile/
 │   └── src/
 │       ├── config/
-│       │   └── api.js                  # Base URL config
+│       │   └── api.js                       # Base URL config
 │       ├── hooks/
-│       │   └── useDrivingSimulation.js # Animation state machine
+│       │   └── useDrivingSimulation.js      # Driving animation state machine
 │       ├── navigation/
 │       │   └── AppNavigator.js
 │       ├── screens/
-│       │   ├── HomeScreen.js           # Route entry point
-│       │   └── MapScreen.js            # Map + simulation UI
+│       │   ├── HomeScreen.js                # Demo launch screen
+│       │   └── MapScreen.js                 # Map + simulation UI
 │       ├── services/
-│       │   └── routeService.js         # API call
+│       │   └── routeService.js              # API call
 │       └── utils/
-│           └── congestionUtils.js      # Congestion constants + segment math
+│           └── congestionSimulation.js      # All congestion logic: patterns, speeds, segment math, alt route generator
 │
 ├── src/
 │   ├── graph_utils.py
@@ -96,7 +99,7 @@ source .venv/bin/activate
 pip install fastapi uvicorn osmnx networkx
 
 # Start the server
-uvicorn backend.app:app --reload --host 0.0.0.0 --port 8000
+python3 -m uvicorn backend.app:app --reload --host 0.0.0.0 --port 8000
 ```
 
 The API will be available at `http://localhost:8000`.  
@@ -114,13 +117,23 @@ cd mobile
 # Install dependencies
 npm install
 
-# Start Expo dev server
-npx expo start
+# Start Expo dev server with tunnel
+npx expo start --tunnel
 ```
 
-Scan the QR code with Expo Go, or press `i` for iOS simulator / `a` for Android emulator.
+Scan the QR code with **Expo Go** (iOS or Android). The `--tunnel` flag exposes the dev server over the internet via a public URL, so your phone does not need to be on the same Wi-Fi network as your computer.
 
-> **Note:** Update `mobile/src/config/api.js` with your machine's local IP address. Both your computer and phone must be on the same Wi-Fi network.
+> **Note:** Make sure the backend server is running and reachable before scanning the QR code. Update `mobile/src/config/api.js` with your backend's URL if needed.
+
+---
+
+## Demo Flow
+
+1. **Start** — HomeScreen shows the fixed route (Evergreen, East San Jose → SJC Airport) and a "What to expect" summary
+2. **Driving** — The car moves along the route; blue and orange segments indicate normal traffic
+3. **Jam reveal** — At ~20% of the route, ahead segments suddenly turn dark red; a warning banner appears and the car pauses for 2 seconds
+4. **Route selection** — Two alternative routes are shown as dashed lines on the map; tap one to preview, then tap **Confirm** to reroute, or let the 10-second countdown auto-continue on the original route
+5. **Arrival** — Shows distance, estimated time, and minutes saved if an alternative was taken
 
 ---
 
@@ -175,7 +188,7 @@ Generates up to K loopless alternative routes. Each candidate is found by iterat
 
 ### Congestion Simulation
 
-Selected edges have their `travel_time` weight multiplied by a configurable `congestion_multiplier`. The shortest path is recomputed on the modified graph, producing a rerouted result when a faster alternative exists.
+Selected edges have their `travel_time` weight multiplied by a configurable `congestion_multiplier`. The mobile app simulates this visually by replacing the normal color pattern with a dark-red jammed pattern mid-drive, then prompting the passenger to choose an alternative route.
 
 ---
 
@@ -210,6 +223,6 @@ python3 tests/yen_test.py
 
 ---
 
-## Author
+## Authors
 
 Yixun Li
