@@ -3,6 +3,9 @@
 //
 // Driving animation state machine.
 // All congestion constants and math live in congestionSimulation.js.
+//
+// Phase flow:
+//   idle → driving → jam_reveal → alt_prompt → alt_driving | driving → done
 // ─────────────────────────────────────────────────────────────
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -16,45 +19,59 @@ import {
   getIntervalMs,
 } from "../utils/congestionSimulation";
 
-// ─────────────────────────────────────────────────────────────
-// Phases:
-//   idle → driving → jam_reveal → alt_prompt → alt_driving | driving → done
-// ─────────────────────────────────────────────────────────────
-
 export function useDrivingSimulation(originalRoute) {
-  const timeoutRef = useRef(null);
+  // Each effect gets its own ref to avoid timer overwrites between phases.
+  const driveTimerRef = useRef(null);
+  const jamTimerRef = useRef(null);
+  const altTimerRef = useRef(null);
 
   const [phase, setPhase] = useState("idle");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [altIndex, setAltIndex] = useState(0);
   const [alternatives, setAlternatives] = useState([]);
   const [selectedAlt, setSelectedAlt] = useState(null);
+  // altTriggered stays true after the first jam reveal so continueOriginal
+  // never re-triggers the jam sequence when driving resumes from the same spot.
   const [altTriggered, setAltTriggered] = useState(false);
 
-  useEffect(() => () => clearTimeout(timeoutRef.current), []);
+  // Cleanup all timers on unmount
+  useEffect(
+    () => () => {
+      clearTimeout(driveTimerRef.current);
+      clearTimeout(jamTimerRef.current);
+      clearTimeout(altTimerRef.current);
+    },
+    [],
+  );
 
-  // Normal (blue/orange) segment boundaries
+  // ── Segment boundaries ──────────────────────────────────────
   const segmentBoundaries = useMemo(
     () => buildSegmentBoundaries(originalRoute.length),
     [originalRoute.length],
   );
 
-  // Jammed (dark-red) boundaries — shown during jam_reveal and alt_prompt
   const jammedBoundaries = useMemo(
     () => buildJammedSegmentBoundaries(originalRoute.length),
     [originalRoute.length],
   );
 
-  // Index at which the orange zone begins (triggers jam reveal)
   const orangeTriggerIdx = useMemo(
     () => segmentBoundaries[ORANGE_SEGMENT_IDX]?.startIdx ?? 0,
     [segmentBoundaries],
   );
 
-  // ── Driving tick ────────────────────────────────────────────
+  const altBoundaries = useMemo(
+    () =>
+      selectedAlt ? buildAltSegmentBoundaries(selectedAlt.coords.length) : [],
+    [selectedAlt],
+  );
+
+  // ── Driving tick (original route) ──────────────────────────
   useEffect(() => {
     if (phase !== "driving") return;
 
+    // altTriggered guard ensures this only fires once even if the car
+    // resumes from the same index after the user chose continueOriginal.
     if (!altTriggered && currentIndex >= orangeTriggerIdx) {
       const alts = generateMockAlternatives(originalRoute, currentIndex);
       if (alts.length > 0) {
@@ -63,10 +80,11 @@ export function useDrivingSimulation(originalRoute) {
         setPhase("jam_reveal");
         return;
       }
+      // No alternatives found — silently continue at current speed.
     }
 
     const ms = getIntervalMs(currentIndex, segmentBoundaries);
-    timeoutRef.current = setTimeout(() => {
+    driveTimerRef.current = setTimeout(() => {
       if (currentIndex >= originalRoute.length - 1) {
         setPhase("done");
         return;
@@ -74,7 +92,7 @@ export function useDrivingSimulation(originalRoute) {
       setCurrentIndex((i) => i + 1);
     }, ms);
 
-    return () => clearTimeout(timeoutRef.current);
+    return () => clearTimeout(driveTimerRef.current);
   }, [
     phase,
     currentIndex,
@@ -87,26 +105,21 @@ export function useDrivingSimulation(originalRoute) {
   // ── Jam reveal timer ────────────────────────────────────────
   useEffect(() => {
     if (phase !== "jam_reveal") return;
-    timeoutRef.current = setTimeout(
+    jamTimerRef.current = setTimeout(
       () => setPhase("alt_prompt"),
       JAM_REVEAL_DURATION_MS,
     );
-    return () => clearTimeout(timeoutRef.current);
+    return () => clearTimeout(jamTimerRef.current);
   }, [phase]);
-
-  // ── Alt route boundaries ────────────────────────────────────
-  const altBoundaries = useMemo(
-    () =>
-      selectedAlt ? buildAltSegmentBoundaries(selectedAlt.coords.length) : [],
-    [selectedAlt],
-  );
 
   // ── Alt route tick ──────────────────────────────────────────
   useEffect(() => {
     if (phase !== "alt_driving" || !selectedAlt) return;
 
+    // getIntervalMs returns "clear" speed when idx is past the last boundary —
+    // this is intentional: the final nodes play at full speed.
     const ms = getIntervalMs(altIndex, altBoundaries);
-    timeoutRef.current = setTimeout(() => {
+    altTimerRef.current = setTimeout(() => {
       if (altIndex >= selectedAlt.coords.length - 1) {
         setPhase("done");
         return;
@@ -114,13 +127,15 @@ export function useDrivingSimulation(originalRoute) {
       setAltIndex((i) => i + 1);
     }, ms);
 
-    return () => clearTimeout(timeoutRef.current);
+    return () => clearTimeout(altTimerRef.current);
   }, [phase, altIndex, selectedAlt, altBoundaries]);
 
   // ── Actions ─────────────────────────────────────────────────
 
   const startDriving = () => {
-    clearTimeout(timeoutRef.current);
+    clearTimeout(driveTimerRef.current);
+    clearTimeout(jamTimerRef.current);
+    clearTimeout(altTimerRef.current);
     setPhase("driving");
     setCurrentIndex(0);
     setAltIndex(0);
@@ -130,14 +145,17 @@ export function useDrivingSimulation(originalRoute) {
   };
 
   const chooseAlternative = (alt) => {
-    clearTimeout(timeoutRef.current);
+    clearTimeout(driveTimerRef.current);
+    clearTimeout(jamTimerRef.current);
     setSelectedAlt(alt);
     setAltIndex(0);
     setPhase("alt_driving");
   };
 
   const continueOriginal = () => {
-    clearTimeout(timeoutRef.current);
+    clearTimeout(jamTimerRef.current);
+    // altTriggered remains true so the jam sequence doesn't re-fire
+    // when driving resumes from the current position.
     setPhase("driving");
   };
 
@@ -203,7 +221,7 @@ export function useDrivingSimulation(originalRoute) {
     return null;
   }, [phase, currentIndex, altIndex, selectedAlt, originalRoute]);
 
-  // 0.0 → 1.0 along the active route (used for progress bar in UI)
+  // 0.0 → 1.0 progress along the active route (used for progress bar in UI)
   const progress = useMemo(() => {
     if (phase === "alt_driving" && selectedAlt)
       return altIndex / Math.max(selectedAlt.coords.length - 1, 1);

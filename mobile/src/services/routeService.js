@@ -2,6 +2,11 @@ import { API_BASE_URL } from "../config/api";
 
 /**
  * Fixed demo route request.
+ *
+ * Note: start_address, end_address, dist, k, and congestion_* are currently
+ * ignored by the backend — service.py uses hardcoded values and a file-cached
+ * graph. These fields are kept here so the request schema stays valid and the
+ * backend can be switched to param-driven mode without frontend changes.
  */
 export async function fetchRoutes() {
   const response = await fetch(`${API_BASE_URL}/api/routes/replan`, {
