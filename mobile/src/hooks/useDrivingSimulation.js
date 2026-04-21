@@ -33,6 +33,9 @@ export function useDrivingSimulation(originalRoute) {
   // altTriggered stays true after the first jam reveal so continueOriginal
   // never re-triggers the jam sequence when driving resumes from the same spot.
   const [altTriggered, setAltTriggered] = useState(false);
+  // jammedActive: true after jam reveal fires, keeps jammed colors visible
+  // even if the user chooses to continue on the original route.
+  const [jammedActive, setJammedActive] = useState(false);
 
   // Cleanup all timers on unmount
   useEffect(
@@ -77,6 +80,7 @@ export function useDrivingSimulation(originalRoute) {
       if (alts.length > 0) {
         setAlternatives(alts);
         setAltTriggered(true);
+        setJammedActive(true); // keep jammed colors from here onwards
         setPhase("jam_reveal");
         return;
       }
@@ -140,6 +144,7 @@ export function useDrivingSimulation(originalRoute) {
     setCurrentIndex(0);
     setAltIndex(0);
     setAltTriggered(false);
+    setJammedActive(false);
     setSelectedAlt(null);
     setAlternatives([]);
   };
@@ -165,7 +170,7 @@ export function useDrivingSimulation(originalRoute) {
     if (phase === "alt_driving" || phase === "done") return [];
 
     const boundaries =
-      phase === "jam_reveal" || phase === "alt_prompt"
+      phase === "jam_reveal" || phase === "alt_prompt" || jammedActive
         ? jammedBoundaries
         : segmentBoundaries;
 
@@ -232,6 +237,7 @@ export function useDrivingSimulation(originalRoute) {
     phase,
     alternatives,
     selectedAlt,
+    jammedActive,
     progress,
     visibleCongestionSegments,
     altVisibleCongestionSegments,

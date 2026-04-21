@@ -32,6 +32,7 @@ export default function MapScreen({ route }) {
     phase,
     alternatives,
     selectedAlt,
+    jammedActive,
     progress,
     visibleCongestionSegments,
     altVisibleCongestionSegments,
@@ -264,8 +265,11 @@ export default function MapScreen({ route }) {
             <View>
               <Text style={styles.arrivedTitle}>You've arrived!</Text>
               <Text style={styles.arrivedSub}>
-                {distanceMiles.toFixed(2)} mi · {Math.round(durationMinutes)}{" "}
-                min route
+                {selectedAlt
+                  ? `${selectedAlt.miles.toFixed(2)} mi · ${selectedAlt.duration} min route`
+                  : jammedActive && !selectedAlt
+                    ? `${distanceMiles.toFixed(2)} mi · 60 min route`
+                    : `${distanceMiles.toFixed(2)} mi · ${Math.round(durationMinutes)} min route`}
               </Text>
             </View>
           </View>
@@ -279,6 +283,18 @@ export default function MapScreen({ route }) {
                 </Text>
                 <Text style={styles.timeSavedLabel}>
                   saved via {selectedAlt.label}
+                </Text>
+              </View>
+            </View>
+          ) : jammedActive ? (
+            <View style={[styles.timeSavedBadge, styles.timeLostBadge]}>
+              <Text style={styles.timeSavedIcon}>🐢</Text>
+              <View>
+                <Text style={[styles.timeSavedMinutes, styles.timeLostMinutes]}>
+                  +20 min
+                </Text>
+                <Text style={[styles.timeSavedLabel, styles.timeLostLabel]}>
+                  slower than expected
                 </Text>
               </View>
             </View>
@@ -597,10 +613,18 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
   },
   timeSavedNeutral: { backgroundColor: "#1F2937" },
+  timeLostBadge: { backgroundColor: "#3B1A1A" },
   timeSavedIcon: { fontSize: 26 },
   timeSavedMinutes: { color: "#4ADE80", fontSize: 30, fontWeight: "800" },
+  timeLostMinutes: { color: "#FCA5A5", fontSize: 30, fontWeight: "800" },
   timeSavedLabel: {
     color: "#86EFAC",
+    fontSize: 14,
+    fontWeight: "500",
+    marginTop: 2,
+  },
+  timeLostLabel: {
+    color: "#FCA5A5",
     fontSize: 14,
     fontWeight: "500",
     marginTop: 2,

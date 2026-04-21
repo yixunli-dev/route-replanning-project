@@ -23,10 +23,10 @@ export const JAM_REVEAL_DURATION_MS = 2000;
 
 // ── Animation speed per congestion level (ms per route node) ──
 export const LEVEL_INTERVAL_MS = {
-  clear:    90,   // open road — fast
-  light:    170,  // slight slowdown
-  moderate: 290,  // noticeably slower
-  heavy:    450,  // crawling
+  clear: 90, // open road — fast
+  light: 320, // orange zone — noticeably slow
+  moderate: 420, // moderately congested
+  heavy: 700, // crawling in heavy jam
 };
 
 // ── Color patterns ─────────────────────────────────────────────
@@ -49,37 +49,37 @@ export const CONGESTION_PATTERN = [
 /** Jammed version: segments 3–7 suddenly turn heavy/dark red.
  *  Swapped in during jam_reveal and alt_prompt phases. */
 export const JAMMED_PATTERN = [
-  { level: "clear",  color: "#2563EB" }, // 0–10%
-  { level: "clear",  color: "#2563EB" }, // 10–20%
-  { level: "light",  color: "#F97316" }, // 20–30%  (car is here)
-  { level: "heavy",  color: "#991B1B" }, // 30–40%  ← suddenly jammed
-  { level: "heavy",  color: "#991B1B" }, // 40–50%
-  { level: "heavy",  color: "#991B1B" }, // 50–60%
-  { level: "heavy",  color: "#991B1B" }, // 60–70%
-  { level: "light",  color: "#F97316" }, // 70–80%
-  { level: "clear",  color: "#2563EB" }, // 80–90%
-  { level: "clear",  color: "#2563EB" }, // 90–100%
+  { level: "clear", color: "#2563EB" }, // 0–10%
+  { level: "clear", color: "#2563EB" }, // 10–20%
+  { level: "light", color: "#F97316" }, // 20–30%  (car is here)
+  { level: "heavy", color: "#991B1B" }, // 30–40%  ← suddenly jammed
+  { level: "heavy", color: "#991B1B" }, // 40–50%
+  { level: "heavy", color: "#991B1B" }, // 50–60%
+  { level: "heavy", color: "#991B1B" }, // 60–70%
+  { level: "light", color: "#F97316" }, // 70–80%
+  { level: "clear", color: "#2563EB" }, // 80–90%
+  { level: "clear", color: "#2563EB" }, // 90–100%
 ];
 
 /** Alt route pattern: no heavy segments, tapers off quickly.
  *  Visually communicates that the bypass is faster. */
 export const ALT_CONGESTION_PATTERN = [
-  { level: "light",    color: "#F97316" }, // 0–12.5%
-  { level: "light",    color: "#F97316" }, // 12.5–25%
+  { level: "light", color: "#F97316" }, // 0–12.5%
+  { level: "light", color: "#F97316" }, // 12.5–25%
   { level: "moderate", color: "#EF4444" }, // 25–37.5%
-  { level: "light",    color: "#F97316" }, // 37.5–50%
-  { level: "light",    color: "#F97316" }, // 50–62.5%
-  { level: "clear",    color: "#2563EB" }, // 62.5–75%
-  { level: "clear",    color: "#2563EB" }, // 75–87.5%
-  { level: "clear",    color: "#2563EB" }, // 87.5–100%
+  { level: "light", color: "#F97316" }, // 37.5–50%
+  { level: "light", color: "#F97316" }, // 50–62.5%
+  { level: "clear", color: "#2563EB" }, // 62.5–75%
+  { level: "clear", color: "#2563EB" }, // 75–87.5%
+  { level: "clear", color: "#2563EB" }, // 87.5–100%
 ];
 
 /** Legend entries shown in the map UI. */
 export const LEGEND = [
-  { label: "Clear",    color: "#2563EB" },
-  { label: "Light",    color: "#F97316" },
+  { label: "Clear", color: "#2563EB" },
+  { label: "Light", color: "#F97316" },
   { label: "Moderate", color: "#EF4444" },
-  { label: "Heavy",    color: "#991B1B" },
+  { label: "Heavy", color: "#991B1B" },
 ];
 
 // ── Segment boundary builders ─────────────────────────────────
@@ -89,11 +89,11 @@ export const LEGEND = [
  * Returns [{ startIdx, endIdx, level, color }, ...].
  */
 export function buildSegmentBoundaries(totalLen, pattern = CONGESTION_PATTERN) {
-  const n    = pattern.length;
+  const n = pattern.length;
   const step = (totalLen - 1) / n;
   return Array.from({ length: n }, (_, i) => ({
     startIdx: Math.round(i * step),
-    endIdx:   Math.round((i + 1) * step),
+    endIdx: Math.round((i + 1) * step),
     ...pattern[i],
   }));
 }
@@ -131,22 +131,22 @@ export function getIntervalMs(idx, boundaries) {
  * Returns [] if the route is too short for a meaningful detour.
  */
 export function generateMockAlternatives(coords, triggerIdx) {
-  const totalLen  = coords.length;
-  const congStart = Math.floor(totalLen * 0.40);
-  const congEnd   = Math.floor(totalLen * 0.62);
+  const totalLen = coords.length;
+  const congStart = Math.floor(totalLen * 0.4);
+  const congEnd = Math.floor(totalLen * 0.62);
 
   if (congStart <= triggerIdx || congEnd >= totalLen - 1) return [];
 
   const approach = coords.slice(triggerIdx, congStart + 1);
-  const tail     = coords.slice(congEnd);
-  const middle   = coords.slice(congStart, congEnd + 1);
+  const tail = coords.slice(congEnd);
+  const middle = coords.slice(congStart, congEnd + 1);
 
   function arcOffset(latScale, lonScale) {
     return middle.map((p, i) => {
-      const t     = i / (middle.length - 1 || 1);
+      const t = i / (middle.length - 1 || 1);
       const curve = Math.sin(t * Math.PI); // smooth 0 → 1 → 0 arc
       return {
-        latitude:  p.latitude  + latScale * curve,
+        latitude: p.latitude + latScale * curve,
         longitude: p.longitude + lonScale * curve,
       };
     });
@@ -154,18 +154,22 @@ export function generateMockAlternatives(coords, triggerIdx) {
 
   return [
     {
-      label:       "Route A",
+      label: "Route A",
       description: "Via northern bypass",
-      timeSaving:  4,
-      color:       "#22C55E",
-      coords:      [...approach, ...arcOffset(+0.013, +0.005), ...tail],
+      timeSaving: 15,
+      miles: 13.2,
+      duration: 45,
+      color: "#22C55E",
+      coords: [...approach, ...arcOffset(+0.013, +0.005), ...tail],
     },
     {
-      label:       "Route B",
+      label: "Route B",
       description: "Via southern loop",
-      timeSaving:  2,
-      color:       "#A78BFA",
-      coords:      [...approach, ...arcOffset(-0.010, -0.004), ...tail],
+      timeSaving: 8,
+      miles: 12.4,
+      duration: 52,
+      color: "#A78BFA",
+      coords: [...approach, ...arcOffset(-0.01, -0.004), ...tail],
     },
   ];
 }
